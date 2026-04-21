@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GymPro — إدارة اشتراكات قاعة الرياضة</title>
+  <meta name="description"
+    content="تطبيق لإدارة اشتراكات قاعة الرياضة — تتبع المشتركين وتواريخ انتهاء الاشتراك بسهولة." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- LOGIN OVERLAY -->
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-box">
+      <div class="login-logo">🔒 GymPro Secure</div>
+      <h2>تسجيل الدخول</h2>
+      <input type="password" id="loginPassword" class="form-input" placeholder="كلمة المرور..." />
+      <button id="loginBtn" class="btn-primary">دخول</button>
+      <p id="loginError" class="error-msg" style="display:none; text-align:center; margin-top:10px;">كلمة المرور خاطئة!</p>
+    </div>
+  </div>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">💪</span>
+        <span class="logo-text">GymPro_damous</span>
+      </div>
+      <div class="header-stats">
+        <div class="stat-badge active-badge">
+          <span class="stat-num" id="activeCount">0</span>
+          <span class="stat-label">نشط</span>
+        </div>
+        <div class="stat-badge expired-badge">
+          <span class="stat-num" id="expiredCount">0</span>
+          <span class="stat-label">منتهي</span>
+        </div>
+        <div class="stat-badge total-badge">
+          <span class="stat-num" id="totalCount">0</span>
+          <span class="stat-label">إجمالي</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main-container">
+
+    <!-- ADD MEMBER CARD -->
+    <section class="card add-card" aria-label="إضافة مشترك جديد">
+      <div class="card-header">
+        <h1 class="card-title">
+          <span class="icon">➕</span> إضافة مشترك جديد
+        </h1>
+      </div>
+      <form id="memberForm" class="form" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="memberName" class="form-label">اسم المشترك</label>
+            <input type="text" id="memberName" class="form-input" placeholder="أدخل الاسم الكامل..." autocomplete="off"
+              required />
+            <span class="error-msg" id="nameError">الرجاء إدخال الاسم</span>
+          </div>
+          <div class="form-group">
+            <label for="memberPhone" class="form-label">رقم الهاتف</label>
+            <input type="tel" id="memberPhone" class="form-input" autocomplete="off" dir="ltr" required />
+            <span class="error-msg" id="phoneError">الرجاء إدخال رقم الهاتف</span>
+          </div>
+          <div class="form-group">
+            <label for="paymentDate" class="form-label">تاريخ دفع الاشتراك</label>
+            <input type="date" id="paymentDate" class="form-input" required />
+            <span class="error-msg" id="dateError">الرجاء اختيار التاريخ</span>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" id="addBtn">
+          <span class="btn-icon">💾</span>
+          <span>حفظ المشترك</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- SEARCH & FILTER -->
+    <section class="card controls-card" aria-label="البحث والتصفية">
+      <div class="controls-row">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" class="search-input" placeholder="ابحث عن مشترك..." />
+        </div>
+        <div class="filter-tabs" role="group" aria-label="تصفية حسب الحالة">
+          <button class="filter-btn active" data-filter="all">الكل</button>
+          <button class="filter-btn" data-filter="active">نشط</button>
+          <button class="filter-btn" data-filter="expired">منتهي</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- MEMBERS TABLE -->
+    <section class="card table-card" aria-label="قائمة المشتركين">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span class="icon">📋</span> قائمة المشتركين
+        </h2>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="members-table" id="membersTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>اسم المشترك</th>
+              <th>رقم الهاتف</th>
+              <th>تاريخ الدفع</th>
+              <th>الأيام المتبقية</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="membersBody">
+            <!-- rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- EMPTY STATE -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🏋️</div>
+        <p class="empty-title">لا يوجد مشتركون بعد</p>
+        <p class="empty-sub">أضف أول مشترك باستخدام النموذج أعلاه</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- DELETE CONFIRM MODAL -->
+  <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-label="تأكيد الحذف">
+    <div class="modal">
+      <div class="modal-icon">🗑️</div>
+      <h3 class="modal-title">تأكيد الحذف</h3>
+      <p class="modal-text">هل أنت متأكد من حذف هذا المشترك؟ لا يمكن التراجع عن هذا الإجراء.</p>
+      <div class="modal-actions">
+        <button class="btn-danger" id="confirmDelete">حذف</button>
+        <button class="btn-ghost" id="cancelDelete">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
