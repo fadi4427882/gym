@@ -142,10 +142,9 @@ body {
 
 /* ---------- HEADER ---------- */
 .header {
-  padding: 32px 40px;
+  padding: 16px 40px;
   background: transparent;
   border: none;
-  backdrop-filter: none;
 }
 
 .welcome-text h2 {
@@ -646,10 +645,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .mobile-bottom-nav { display: flex; }
   
   .header {
-    padding: 24px 20px;
-    background: var(--bg-surface);
-    border-bottom: 1px solid var(--border);
-  }
+  padding: 16px 20px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
   
   .header-inner {
     flex-direction: row;
