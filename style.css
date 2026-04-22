@@ -20,6 +20,19 @@
   --warning:       #f59e0b;
   --whatsapp:      #25d366;
   
+  --text-primary:  #f1f5f9;
+  --text-secondary:#94a3b8;
+  --text-muted:    #475569;
+
+  --radius-sm:     8px;
+  --radius-md:     14px;
+  --radius-lg:     20px;
+
+  --shadow-card:   0 4px 30px rgba(0,0,0,0.4);
+  --shadow-btn:    0 4px 20px rgba(99,102,241,0.35);
+
+  --transition:    0.25s ease;
+
   --sidebar-width: 260px;
   --font-main:     'Outfit', sans-serif;
   --font-ar:       'Cairo', sans-serif;
@@ -30,7 +43,14 @@ body {
   background: var(--bg-base);
   color: var(--text-primary);
   min-height: 100vh;
+  direction: rtl;
+  line-height: 1.6;
   overflow-x: hidden;
+}
+
+/* Force Cairo for Arabic text */
+[lang="ar"], .card-title, .form-label, .btn-primary, .stat-label, .member-name {
+  font-family: var(--font-ar), var(--font-main);
 }
 
 /* ---------- DASHBOARD LAYOUT ---------- */
@@ -388,18 +408,20 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .member-name {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.05rem;
   transition: color var(--transition);
+  filter: brightness(1.2);
 }
 .member-name.active  { color: var(--success); }
 .member-name.warning { color: var(--warning); }
 .member-name.expired { color: var(--danger);  }
 
 .sub-type {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Days remaining pill */

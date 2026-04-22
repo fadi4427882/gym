@@ -97,8 +97,10 @@ function daysRemaining(expiryTs) {
   return Math.ceil(diff / MS_PER_DAY);
 }
 
+/** Format a timestamp to a readable Arabic-friendly date with Latin numerals */
 function formatDate(ts) {
-  return new Date(ts).toLocaleDateString('ar-EG', {
+  // Using 'ar-EG-u-nu-latn' ensures Arabic labels with Western (Latin) digits
+  return new Date(ts).toLocaleDateString('ar-EG-u-nu-latn', {
     year: 'numeric', month: 'short', day: 'numeric'
   });
 }
