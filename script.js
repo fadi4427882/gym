@@ -73,6 +73,19 @@ async function startApp() {
   cancelBtn.addEventListener('click',  closeModal);
   exportBtn.addEventListener('click',  exportToExcel);
   modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+
+  // Mobile Nav Logic
+  const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+  bottomNavItems.forEach(item => {
+    item.addEventListener('click', () => {
+      bottomNavItems.forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      const view = item.dataset.view;
+      if (view === 'dashboard') window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (view === 'add') document.querySelector('.add-card').scrollIntoView({ behavior: 'smooth' });
+      if (view === 'members') document.querySelector('.table-card').scrollIntoView({ behavior: 'smooth' });
+    });
+  });
 }
 
 // ... (initLogin, hashStr, syncTime, getCurrentTime, setDefaultDate remain similar but I'll update logic)

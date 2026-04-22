@@ -596,163 +596,114 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-top: 1px solid var(--border);
 }
 
-/* ---------- MOBILE RESPONSIVE REFINEMENTS ---------- */
-@media (max-width: 992px) {
-  .sidebar {
-    width: 80px;
-    padding: 24px 10px;
-  }
-  
-  .logo-text, .nav-item span:not(.nav-icon), .sidebar-footer {
-    display: none;
-  }
-  
-  .main-content {
-    margin-right: 80px;
-  }
-  
-  .header, .main-container {
-    padding: 20px;
-  }
+/* ---------- MOBILE BOTTOM NAV ---------- */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(15, 18, 26, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  padding: 12px 10px calc(12px + env(safe-area-inset-bottom));
+  justify-content: space-around;
+  z-index: 1001;
 }
 
-@media (max-width: 600px) {
-  .sidebar {
-    display: none;
-  }
-  
-  .main-content {
-    margin-right: 0;
-  }
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-ar);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.bottom-nav-item.active {
+  color: var(--primary-light);
+}
+
+.bottom-nav-item .nav-icon {
+  font-size: 1.2rem;
 }
 
 /* ---------- MOBILE RESPONSIVE REFINEMENTS ---------- */
 @media (max-width: 768px) {
-  .header-inner {
-    flex-direction: column;
-    padding: 12px 16px;
-    gap: 12px;
-  }
-
-  .logo-text { font-size: 1.3rem; }
+  .dashboard-layout { display: block; }
   
-  .header-stats {
-    width: 100%;
-    justify-content: center;
+  .sidebar { display: none; }
+  
+  .main-content { margin-right: 0; }
+  
+  .mobile-bottom-nav { display: flex; }
+  
+  .header {
+    padding: 24px 20px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
   }
-
-  .stat-badge {
-    flex: 1;
-    padding: 8px 4px;
-    min-width: 0;
+  
+  .header-inner {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
   }
-
+  
+  .welcome-text h2 { font-size: 1.3rem; }
+  .welcome-text p { font-size: 0.8rem; }
+  
+  .header-stats { display: none; } /* Hide stats in header on mobile to save space */
+  
   .main-container {
-    padding: 16px 16px 80px;
-    gap: 16px;
+    padding: 20px 16px 100px; /* Space for bottom nav */
   }
 
-  .card {
-    padding: 20px 16px;
-  }
-
-  .controls-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .filter-tabs {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .filter-btn {
-    flex: 1;
-    padding: 8px 4px;
-    font-size: 0.8rem;
-  }
-
-  /* Table to Cards Transformation */
-  .members-table thead {
-    display: none; /* Hide table headers on mobile */
-  }
-
-  .members-table, .members-table tbody, .members-table tr, .members-table td {
-    display: block;
-    width: 100%;
-  }
-
+  /* Improved Member Cards on Mobile */
   .members-table tbody tr {
-    margin-bottom: 16px;
-    padding: 16px;
+    background: linear-gradient(145deg, var(--bg-elevated), var(--bg-surface));
     border: 1px solid var(--border);
-    position: relative;
-    background: var(--bg-elevated);
-    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
   }
 
   .members-table tbody td {
-    padding: 8px 0;
-    text-align: right;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: none;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
   }
 
-  .members-table tbody td:last-child {
-    border-bottom: none;
-    margin-top: 8px;
-    padding-top: 12px;
-  }
-
-  /* Add labels before the data on mobile */
   .members-table tbody td::before {
-    content: attr(data-label);
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
   }
 
-  .members-table tbody td:first-child { border-radius: 0; }
-  .members-table tbody td:last-child { border-radius: 0; }
+  .member-name { font-size: 1.1rem; }
 
-  .row-num {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    width: 28px;
-    height: 28px;
-    background: var(--primary);
-    color: #fff;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    z-index: 2;
-  }
-
-  /* Adjust action buttons for mobile */
   .actions-cell {
-    width: 100%;
-    justify-content: flex-end;
-    gap: 12px;
+    padding-top: 16px;
+    gap: 16px;
   }
 
   .btn-icon-only {
-    width: 44px;
-    height: 44px; /* Larger touch target */
-    font-size: 1.2rem;
+    flex: 1;
+    height: 48px;
+    background: rgba(255,255,255,0.03);
   }
 }
 
 @media (max-width: 480px) {
-  .logo-text { font-size: 1.1rem; }
-  .card-title { font-size: 1rem; }
-  
-  .btn-primary {
-    width: 100%;
-    justify-content: center;
-  }
+  .welcome-text h2 { font-size: 1.1rem; }
 }
 
 @keyframes slideDown {
@@ -760,10 +711,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ---------- TOAST ---------- */
+/* ---------- TOAST & LOGIN ---------- */
 .toast {
   position: fixed;
-  bottom: 32px;
+  bottom: 100px; /* Above bottom nav */
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   background: var(--bg-elevated);
@@ -781,15 +732,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   white-space: nowrap;
 }
 
-.toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.success { border-color: var(--success); color: var(--success); }
 .toast.error   { border-color: var(--danger);  color: var(--danger); }
 
-/* ---------- LOGIN OVERLAY ---------- */
 .login-overlay {
   position: fixed;
   inset: 0;
@@ -803,31 +749,22 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .login-box {
   background: var(--bg-surface);
-  padding: 48px;
+  padding: 40px 30px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  width: 90%;
-  max-width: 420px;
+  width: 85%;
+  max-width: 380px;
   text-align: center;
   box-shadow: 0 40px 100px rgba(0,0,0,0.7);
   animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .login-logo {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: var(--primary-light);
-  margin-bottom: 24px;
-  letter-spacing: 2px;
-}
-
-.login-box button {
-  width: 100%;
-  padding: 14px;
   margin-bottom: 20px;
 }
 
-.login-dev {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
+.login-box button { width: 100%; padding: 14px; margin-bottom: 20px; }
+.login-dev { font-size: 0.8rem; color: var(--text-muted); }
