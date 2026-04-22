@@ -297,19 +297,19 @@ function renderTable() {
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>
+      <td data-label="#">
         <div class="row-num">${index + 1}</div>
       </td>
-      <td>
+      <td data-label="اسم المشترك">
         <span class="member-name ${active ? 'active' : 'expired'}">
           ${escapeHtml(member.name)}
         </span>
       </td>
-      <td>
+      <td data-label="رقم الهاتف">
         <span class="phone-num" dir="ltr">${member.phone ? escapeHtml(member.phone) : '<span style="color:var(--text-muted)">—</span>'}</span>
       </td>
-      <td>${formatDate(member.paymentTimestamp)}</td>
-      <td>
+      <td data-label="تاريخ الدفع">${formatDate(member.paymentTimestamp)}</td>
+      <td data-label="الأيام المتبقية">
         <span class="days-pill ${active ? 'active' : 'expired'}">
           ${active
             ? `⏳ ${remaining} يوم متبقي`
@@ -317,13 +317,19 @@ function renderTable() {
           }
         </span>
       </td>
-      <td>
+      <td data-label="الحالة">
         <span class="status-badge ${active ? 'active' : 'expired'}">
           ${active ? 'نشط' : 'منتهي'}
         </span>
       </td>
-      <td>
+      <td data-label="إجراءات">
         <div class="actions-cell">
+          <button
+            class="btn-icon-only btn-renew"
+            title="تجديد الاشتراك"
+            data-id="${member.id}"
+            aria-label="تجديد ${escapeHtml(member.name)}"
+          >🔄</button>
           <button
             class="btn-icon-only btn-delete"
             title="حذف المشترك"
@@ -344,9 +350,29 @@ function renderTable() {
     });
   });
 
+  // Attach delete events
   membersBody.querySelectorAll('.btn-delete').forEach(btn => {
     btn.addEventListener('click', () => openModal(btn.dataset.id));
   });
+
+  // Attach renew events
+  membersBody.querySelectorAll('.btn-renew').forEach(btn => {
+    btn.addEventListener('click', () => handleRenew(btn.dataset.id));
+  });
+}
+
+/** Handle Subscription Renewal */
+function handleRenew(id) {
+  const member = members.find(m => m.id === id);
+  if (!member) return;
+
+  // Update to current date (synced time)
+  member.paymentTimestamp = getCurrentTime();
+  
+  saveToStorage();
+  renderAll();
+  
+  showToast(`🔄 تم تجديد اشتراك "${member.name}" بنجاح`, 'success');
 }
 
 // ─── DELETE ───────────────────────────────────────────────

@@ -436,6 +436,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transition: background var(--transition), border-color var(--transition), transform var(--transition);
 }
 .btn-icon-only:hover { transform: scale(1.1); }
+.btn-renew:hover { background: var(--success-bg); border-color: var(--success); color: var(--success); }
 .btn-delete:hover { background: var(--danger-bg); border-color: var(--danger); }
 
 /* ---------- EMPTY STATE ---------- */
@@ -519,6 +520,34 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .btn-ghost:hover { background: rgba(255,255,255,0.08); }
 
+/* ---------- FOOTER ---------- */
+.footer {
+  padding: 40px 24px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dev-name {
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary-light), var(--success));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.copyright {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
 /* ---------- TOAST ---------- */
 .toast {
   position: fixed;
@@ -601,6 +630,146 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .login-box button {
   width: 100%;
   justify-content: center;
+  margin-bottom: 16px;
+}
+
+.login-dev {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.login-dev .dev-name {
+  font-size: 0.8rem;
+}
+
+/* ---------- MOBILE RESPONSIVE REFINEMENTS ---------- */
+@media (max-width: 768px) {
+  .header-inner {
+    flex-direction: column;
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .logo-text { font-size: 1.3rem; }
+  
+  .header-stats {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .stat-badge {
+    flex: 1;
+    padding: 8px 4px;
+    min-width: 0;
+  }
+
+  .main-container {
+    padding: 16px 16px 80px;
+    gap: 16px;
+  }
+
+  .card {
+    padding: 20px 16px;
+  }
+
+  .controls-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-tabs {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filter-btn {
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 0.8rem;
+  }
+
+  /* Table to Cards Transformation */
+  .members-table thead {
+    display: none; /* Hide table headers on mobile */
+  }
+
+  .members-table, .members-table tbody, .members-table tr, .members-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .members-table tbody tr {
+    margin-bottom: 16px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    position: relative;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+  }
+
+  .members-table tbody td {
+    padding: 8px 0;
+    text-align: right;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .members-table tbody td:last-child {
+    border-bottom: none;
+    margin-top: 8px;
+    padding-top: 12px;
+  }
+
+  /* Add labels before the data on mobile */
+  .members-table tbody td::before {
+    content: attr(data-label);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .members-table tbody td:first-child { border-radius: 0; }
+  .members-table tbody td:last-child { border-radius: 0; }
+
+  .row-num {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 28px;
+    height: 28px;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 2;
+  }
+
+  /* Adjust action buttons for mobile */
+  .actions-cell {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .btn-icon-only {
+    width: 44px;
+    height: 44px; /* Larger touch target */
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-text { font-size: 1.1rem; }
+  .card-title { font-size: 1rem; }
+  
+  .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @keyframes slideDown {
