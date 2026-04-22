@@ -4,13 +4,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GymPro — إدارة اشتراكات قاعة الرياضة</title>
+  <title>GymPro Dashboard — Système d'élite</title>
   <meta name="description"
-    content="تطبيق لإدارة اشتراكات قاعة الرياضة — تتبع المشتركين وتواريخ انتهاء الاشتراك بسهولة." />
+    content="Plateforme d'élite pour la gestion des abonnements de fitness." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <!-- Excel Export Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 
 <body>
@@ -22,85 +24,115 @@
       <h2>تسجيل الدخول</h2>
       <input type="password" id="loginPassword" class="form-input" placeholder="كلمة المرور..." />
       <button id="loginBtn" class="btn-primary">دخول</button>
-      <p class="login-dev">Développé par <span class="dev-name">Fadi</span></p>
+      <p class="login-dev">Par le développeur <span class="dev-name">Fadi</span></p>
       <p id="loginError" class="error-msg" style="display:none; text-align:center; margin-top:10px;">كلمة المرور خاطئة!</p>
     </div>
   </div>
 
-  <!-- ===== HEADER ===== -->
-  <header class="header">
-    <div class="header-inner">
-      <div class="logo">
-        <span class="logo-icon">💪</span>
-        <span class="logo-text">GymPro_damous</span>
+  <div class="dashboard-layout">
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <span class="logo-icon">💠</span>
+        <span class="logo-text">GYMPRO<span class="pro-tag">PRO</span></span>
       </div>
-      <div class="header-stats">
-        <div class="stat-badge active-badge">
-          <span class="stat-num" id="activeCount">0</span>
-          <span class="stat-label">نشط</span>
-        </div>
-        <div class="stat-badge expired-badge">
-          <span class="stat-num" id="expiredCount">0</span>
-          <span class="stat-label">منتهي</span>
-        </div>
-        <div class="stat-badge total-badge">
-          <span class="stat-num" id="totalCount">0</span>
-          <span class="stat-label">إجمالي</span>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <!-- ===== MAIN ===== -->
-  <main class="main-container">
-
-    <!-- ADD MEMBER CARD -->
-    <section class="card add-card" aria-label="إضافة مشترك جديد">
-      <div class="card-header">
-        <h1 class="card-title">
-          <span class="icon">➕</span> إضافة مشترك جديد
-        </h1>
-      </div>
-      <form id="memberForm" class="form" novalidate>
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="memberName" class="form-label">اسم المشترك</label>
-            <input type="text" id="memberName" class="form-input" placeholder="أدخل الاسم الكامل..." autocomplete="off"
-              required />
-            <span class="error-msg" id="nameError">الرجاء إدخال الاسم</span>
-          </div>
-          <div class="form-group">
-            <label for="memberPhone" class="form-label">رقم الهاتف</label>
-            <input type="tel" id="memberPhone" class="form-input" autocomplete="off" dir="ltr" required />
-            <span class="error-msg" id="phoneError">الرجاء إدخال رقم الهاتف</span>
-          </div>
-          <div class="form-group">
-            <label for="paymentDate" class="form-label">تاريخ دفع الاشتراك</label>
-            <input type="date" id="paymentDate" class="form-input" required />
-            <span class="error-msg" id="dateError">الرجاء اختيار التاريخ</span>
-          </div>
-        </div>
-        <button type="submit" class="btn-primary" id="addBtn">
-          <span class="btn-icon">💾</span>
-          <span>حفظ المشترك</span>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="dashboard">
+          <span class="nav-icon">📊</span> Dashboard
         </button>
-      </form>
-    </section>
-
-    <!-- SEARCH & FILTER -->
-    <section class="card controls-card" aria-label="البحث والتصفية">
-      <div class="controls-row">
-        <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="searchInput" class="search-input" placeholder="ابحث عن مشترك..." />
+        <button class="nav-item" data-view="members">
+          <span class="nav-icon">👥</span> Membres
         </div>
-        <div class="filter-tabs" role="group" aria-label="تصفية حسب الحالة">
-          <button class="filter-btn active" data-filter="all">الكل</button>
-          <button class="filter-btn" data-filter="active">نشط</button>
-          <button class="filter-btn" data-filter="expired">منتهي</button>
-        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <p class="login-dev">Par le développeur <span class="dev-name">Fadi</span></p>
       </div>
-    </section>
+    </aside>
+
+    <div class="main-content">
+      <!-- ===== HEADER ===== -->
+      <header class="header">
+        <div class="header-inner">
+          <div class="welcome-text">
+            <h2>Tableau de Bord</h2>
+            <p>Bienvenue dans votre centre de contrôle d'élite.</p>
+          </div>
+          <div class="header-stats">
+            <div class="stat-badge active-badge">
+              <span class="stat-num" id="activeCount">0</span>
+              <span class="stat-label">نشط</span>
+            </div>
+            <div class="stat-badge expired-badge">
+              <span class="stat-num" id="expiredCount">0</span>
+              <span class="stat-label">منتهي</span>
+            </div>
+            <div class="stat-badge total-badge">
+              <span class="stat-num" id="totalCount">0</span>
+              <span class="stat-label">إجمالي</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ===== MAIN ===== -->
+      <main class="main-container">
+
+        <div class="grid-layout">
+          <!-- ADD MEMBER CARD -->
+          <section class="card add-card" aria-label="إضافة مشترك جديد">
+            <div class="card-header">
+              <h1 class="card-title">
+                <span class="icon">✨</span> تسجيل مشترك جديد
+              </h1>
+            </div>
+            <form id="memberForm" class="form" novalidate>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="memberName" class="form-label">اسم المشترك</label>
+                  <input type="text" id="memberName" class="form-input" placeholder="الاسم الكامل..." required />
+                </div>
+                <div class="form-group">
+                  <label for="memberPhone" class="form-label">رقم الهاتف</label>
+                  <input type="tel" id="memberPhone" class="form-input" placeholder="05/06/07..." dir="ltr" required />
+                </div>
+                <div class="form-group">
+                  <label for="paymentDate" class="form-label">بداية الاشتراك</label>
+                  <input type="date" id="paymentDate" class="form-input" required />
+                </div>
+                <div class="form-group">
+                  <label for="subDuration" class="form-label">مدة الاشتراك</label>
+                  <select id="subDuration" class="form-input select-input">
+                    <option value="1">شهر واحد (30 يوم)</option>
+                    <option value="3">3 أشهر (90 يوم)</option>
+                    <option value="12">سنة كاملة (365 يوم)</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn-primary" id="addBtn">
+                <span class="btn-icon">➕</span>
+                <span>تفعيل الاشتراك</span>
+              </button>
+            </form>
+          </section>
+
+          <!-- SEARCH & EXPORT -->
+          <section class="card controls-card" aria-label="البحث والتصدير">
+            <div class="controls-row">
+              <div class="search-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" class="search-input" placeholder="ابحث عن مشترك بالاسم أو الرقم..." />
+              </div>
+              <div class="filter-tabs" role="group">
+                <button class="filter-btn active" data-filter="all">الكل</button>
+                <button class="filter-btn" data-filter="active">نشط</button>
+                <button class="filter-btn" data-filter="expired">منتهي</button>
+              </div>
+              <button id="exportExcel" class="btn-glass">
+                <span class="btn-icon">📊</span> تصدير Excel
+              </button>
+            </div>
+          </section>
+        </div>
 
     <!-- MEMBERS TABLE -->
     <section class="card table-card" aria-label="قائمة المشتركين">
