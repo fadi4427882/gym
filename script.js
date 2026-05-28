@@ -17,7 +17,9 @@ document.addEventListener('keydown', e => {
 });
 
 // ─── CONSTANTS ───────────────────────────────────────────
-const STORAGE_KEY   = 'gymPro_members_v1';
+const urlParams = new URLSearchParams(window.location.search);
+const gymID = urlParams.get('gym') || 'default_gym';
+const STORAGE_KEY   = `gymPro_members_${gymID}`;
 const EXPIRY_DAYS   = 30;
 const MS_PER_DAY    = 1000 * 60 * 60 * 24;
 
@@ -47,20 +49,25 @@ const modalOverlay = document.getElementById('modalOverlay');
 const confirmBtn   = document.getElementById('confirmDelete');
 const cancelBtn    = document.getElementById('cancelDelete');
 const exportBtn    = document.getElementById('exportExcel');
+const backupBtn    = document.getElementById('backupBtn');
+const restoreFile  = document.getElementById('restoreFile');
 const toast        = document.getElementById('toast');
 
-// Login DOM
-const loginOverlay = document.getElementById('loginOverlay');
-const loginPassword= document.getElementById('loginPassword');
-const loginBtn     = document.getElementById('loginBtn');
-const loginError   = document.getElementById('loginError');
+
 
 // ─── INIT ─────────────────────────────────────────────────
 (function init() {
-  initLogin();
+  startApp();
 })();
 
 async function startApp() {
+  const displayGymName = gymID.replace('_', ' ').toUpperCase();
+  document.title = displayGymName + " - GymPro";
+  
+  const displayEl = document.getElementById('gymNameDisplay');
+  if (displayEl) displayEl.innerText = displayGymName;
+
+  initGymName();
   await syncTime();
   setDefaultDate();
   loadFromStorage();
@@ -72,6 +79,8 @@ async function startApp() {
   confirmBtn.addEventListener('click', confirmDeleteMember);
   cancelBtn.addEventListener('click',  closeModal);
   exportBtn.addEventListener('click',  exportToExcel);
+  backupBtn.addEventListener('click',   backupData);
+  restoreFile.addEventListener('change', restoreData);
   modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 
   // Mobile Nav Logic
@@ -89,6 +98,23 @@ async function startApp() {
 }
 
 // ... (initLogin, hashStr, syncTime, getCurrentTime, setDefaultDate remain similar but I'll update logic)
+
+// ─── GYM NAME LOGIC ────────────────────────────────────────
+
+// عند بداية تشغيل البرنامج
+function initGymName() {
+    const gymNameKey = `gym_name_${gymID}`;
+    let gymName = localStorage.getItem(gymNameKey);
+    if (!gymName) {
+        gymName = prompt("أدخل اسم القاعة الرياضية الخاص بك:", "قاعة رياضية");
+        localStorage.setItem(gymNameKey, gymName || "قاعة رياضية");
+    }
+    // عرض الاسم في الواجهة
+    const titleEl = document.getElementById('gymTitle');
+    if (titleEl) {
+        titleEl.innerText = gymName || "قاعة رياضية";
+    }
+}
 
 // ─── LOGIC ───────────────────────────────────────────────
 
@@ -271,14 +297,13 @@ function sendWhatsApp(id) {
   }
 
   const remaining = daysRemaining(member.expiryTimestamp);
+  const gymName = localStorage.getItem(`gym_name_${gymID}`) || "القاعة الرياضية";
   let message = "";
   
   if (remaining <= 0) {
-    message = `مرحباً ${member.name}، نود إعلامك بأن اشتراكك في القاعة الرياضية قد انتهى منذ ${Math.abs(remaining)} أيام. ننتظرك لتجديده والعودة للتدريب! 💪`;
-  } else if (remaining <= 3) {
-    message = `مرحباً ${member.name}، تذكير سريع بأن اشتراكك في القاعة الرياضية سينتهي خلال ${remaining} أيام. ننتظرك لتجديده لضمان استمرار تدريباتك! ✨`;
+    message = `مرحباً ${member.name}! 💪\nنود تذكيرك أن اشتراكك في ${gymName} قد انتهى منذ ${Math.abs(remaining)} أيام. نتمنى أنك تستمتع بتدريباتك معنا، وبانتظار رؤيتك لتجديد نشاطك ومواصلة رحلتك نحو أفضل نسخة من نفسك!\nالقاعة ترحب بك دائماً.`;
   } else {
-    message = `مرحباً ${member.name}، كيف حال التدريبات؟ أردنا فقط تذكيرك بأن اشتراكك الحالي ينتهي بتاريخ ${formatDate(member.expiryTimestamp)}. بالتوفيق! 🏋️‍♂️`;
+    message = `مرحباً ${member.name}! 💪\nنود تذكيرك أن اشتراكك في ${gymName} سينتهي خلال ${remaining} أيام. نتمنى أنك تستمتع بتدريباتك معنا، وبانتظار رؤيتك لتجديد نشاطك ومواصلة رحلتك نحو أفضل نسخة من نفسك!\nالقاعة ترحب بك دائماً.`;
   }
 
   // Clean phone number (remove spaces, etc. and ensure it has a country code if needed, but for now we'll use it as is)
@@ -318,7 +343,92 @@ function exportToExcel() {
   showToast("📊 Fichier Excel généré", "success");
 }
 
-// ... (The rest of existing helpers like applyFilters, handleSearch, handleFilter, openModal, closeModal, confirmDeleteMember, showToast, escapeHtml, hashStr, syncTime, getCurrentTime, setDefaultDate should be kept but I will write them to complete the file)
+// ─── BACKUP & RESTORE ─────────────────────────────────────
+
+/** BACKUP — Download all data as a .json file */
+function backupData() {
+  if (members.length === 0) {
+    showToast("⚠️ لا توجد بيانات لتصديرها", "error");
+    return;
+  }
+
+  const backup = {
+    version: "gymPro_v1",
+    exportedAt: new Date().toISOString(),
+    totalMembers: members.length,
+    data: members
+  };
+
+  const json     = JSON.stringify(backup, null, 2);
+  const blob     = new Blob([json], { type: "application/json" });
+  const url      = URL.createObjectURL(blob);
+  const filename = `GymPro_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+
+  const a  = document.createElement("a");
+  a.href   = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  showToast(`💾 تم تحميل النسخة الاحتياطية (${members.length} مشترك)`, "success");
+}
+
+/** RESTORE — Import data from a .json backup file */
+function restoreData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Reset input so the same file can be re-selected if needed
+  e.target.value = "";
+
+  const reader = new FileReader();
+  reader.onload = function (event) {
+    try {
+      const parsed = JSON.parse(event.target.result);
+
+      // Validate structure
+      if (!parsed.data || !Array.isArray(parsed.data)) {
+        showToast("❌ ملف غير صالح — تأكد من اختيار ملف GymPro", "error");
+        return;
+      }
+
+      const imported = parsed.data;
+
+      // Check each member has required fields
+      const valid = imported.every(m => m.id && m.name && m.paymentTimestamp);
+      if (!valid) {
+        showToast("❌ البيانات تالفة أو بصيغة غير صحيحة", "error");
+        return;
+      }
+
+      // Merge: add only members whose ID doesn't already exist
+      let addedCount = 0;
+      imported.forEach(m => {
+        if (!members.find(existing => existing.id === m.id)) {
+          // Ensure migration fields exist
+          if (!m.duration) m.duration = 1;
+          if (!m.expiryTimestamp) m.expiryTimestamp = calculateExpiry(m.paymentTimestamp, m.duration);
+          members.unshift(m);
+          addedCount++;
+        }
+      });
+
+      saveToStorage();
+      renderAll();
+
+      if (addedCount > 0) {
+        showToast(`✅ تمت الاستعادة — ${addedCount} مشترك جديد أُضيف`, "success");
+      } else {
+        showToast("ℹ️ جميع المشتركين موجودون مسبقاً — لا جديد", "");
+      }
+
+    } catch (err) {
+      showToast("❌ حدث خطأ أثناء قراءة الملف", "error");
+    }
+  };
+  reader.readAsText(file);
+}
+
 
 function applyFilters() {
   const query = searchInput.value.trim().toLowerCase();
@@ -366,31 +476,7 @@ function escapeHtml(str) {
   }[ch]));
 }
 
-async function hashStr(str) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
 
-async function initLogin() {
-  const defaultHash = '2351b8cb47494a8378a6ba5530ad53c4ee308ebb346fe35c785ec6f93392c107';
-  if (!localStorage.getItem('gymPro_pass_v2')) localStorage.setItem('gymPro_pass_v2', defaultHash);
-  const storedHash = localStorage.getItem('gymPro_pass_v2');
-  if (sessionStorage.getItem('gymPro_auth') === 'true') {
-    loginOverlay.style.display = 'none';
-    startApp();
-  } else {
-    loginBtn.addEventListener('click', async () => {
-      const h = await hashStr(loginPassword.value);
-      if (h === storedHash) {
-        sessionStorage.setItem('gymPro_auth', 'true');
-        loginOverlay.style.display = 'none';
-        startApp();
-      } else {
-        loginError.style.display = 'block';
-      }
-    });
-  }
-}
 
 async function syncTime() {
   try {
