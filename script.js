@@ -17,15 +17,15 @@ document.addEventListener('keydown', e => {
 });
 
 // ─── CONSTANTS ───────────────────────────────────────────
-// ─── جلب وتثبيت اسم الصالة الذكي ───────────────────────────
+// ─── جلب وتثبيت اسم الصالة الذكي (LocalStorage Fix) ───
 const urlParams = new URLSearchParams(window.location.search);
 let gymID = urlParams.get('gym');
 
 if (gymID) {
-  // إذا دخل بالرابط المخصص (مثال: ?gym=fadi_gym)، التليفون يشفي على هاد الصالة للأبد
+  // إذا دخل بالرابط المخصص، التليفون يشفي على هاد الصالة للأبد
   localStorage.setItem('gymPro_saved_gym_id', gymID);
 } else {
-  // إذا فتح التطبيق من شاشة الهاتف (PWA) الرابط يكون فارغ، هنا نجبدو الصالة لي شفينا عليها
+  // إذا فتح التطبيق من الـ PWA، نجبدو الصالة لي شفينا عليها مسبقاً
   gymID = localStorage.getItem('gymPro_saved_gym_id') || 'default_gym';
 }
 
@@ -350,7 +350,7 @@ function renderTable() {
   membersBody.querySelectorAll('.btn-whatsapp').forEach(btn => btn.addEventListener('click', () => sendWhatsApp(btn.dataset.id)));
 }
 
-/** WhatsApp Notification Logic */
+// ─── دالة إرسال رسالة الواتساب بالرقم الأصلي ───
 function sendWhatsApp(id) {
   const member = members.find(m => m.id === id);
   if (!member || !member.phone) {
@@ -359,17 +359,19 @@ function sendWhatsApp(id) {
   }
 
   const remaining = daysRemaining(member.expiryTimestamp);
-  const gymName   = localStorage.getItem(`gym_name_${gymID}`) || "القاعة الرياضية";
-  let message     = "";
-
+  let message = "";
+  
   if (remaining <= 0) {
-    message = `مرحباً ${member.name}! 💪\nنود تذكيرك أن اشتراكك في ${gymName} قد انتهى منذ ${Math.abs(remaining)} أيام. نتمنى أنك تستمتع بتدريباتك معنا، وبانتظار رؤيتك لتجديد نشاطك ومواصلة رحلتك نحو أفضل نسخة من نفسك!\nالقاعة ترحب بك دائماً.`;
+    message = `مرحباً ${member.name}، نود إعلامك بأن اشتراكك في القاعة الرياضية قد انتهى منذ ${Math.abs(remaining)} أيام. ننتظرك لتجديده والعودة للتدريب! 💪`;
+  } else if (remaining <= 3) {
+    message = `مرحباً ${member.name}، تذكير سريع بأن اشتراكك في القاعة الرياضية سينتهي خلال ${remaining} أيام. ننتظرك لتجديده لضمان استمرار تدريباتك! ✨`;
   } else {
-    message = `مرحباً ${member.name}! 💪\nنود تذكيرك أن اشتراكك في ${gymName} سينتهي خلال ${remaining} أيام. نتمنى أنك تستمتع بتدريباتك معنا، وبانتظار رؤيتك لتجديد نشاطك ومواصلة رحلتك نحو أفضل نسخة من نفسك!\nالقاعة ترحب بك دائماً.`;
+    message = `مرحباً ${member.name}، كيف حال التدريبات؟ أردنا فقط تذكيرك بأن اشتراكك الحالي ينتهي بتاريخ ${formatDate(member.expiryTimestamp)}. بالتوفيق! 🏋️♂️`;
   }
 
-  // الرقم مُخزَّن مسبقاً بالصيغة الدولية (213XXXXXXXXX)
-  const waUrl = `https://api.whatsapp.com/send?phone=${member.phone}&text=${encodeURIComponent(message)}`;
+  // الكود ينحي برك الرموز والفراغات ويخلي الرقم كامل كيما كتبتو نورمال
+  const cleanPhone = member.phone.replace(/\D/g, '');
+  const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
   window.open(waUrl, '_blank');
 }
 
