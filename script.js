@@ -17,8 +17,18 @@ document.addEventListener('keydown', e => {
 });
 
 // ─── CONSTANTS ───────────────────────────────────────────
+// ─── جلب وتثبيت اسم الصالة الذكي ───────────────────────────
 const urlParams = new URLSearchParams(window.location.search);
-const gymID = urlParams.get('gym') || 'default_gym';
+let gymID = urlParams.get('gym');
+
+if (gymID) {
+  // إذا دخل بالرابط المخصص (مثال: ?gym=fadi_gym)، التليفون يشفي على هاد الصالة للأبد
+  localStorage.setItem('gymPro_saved_gym_id', gymID);
+} else {
+  // إذا فتح التطبيق من شاشة الهاتف (PWA) الرابط يكون فارغ، هنا نجبدو الصالة لي شفينا عليها
+  gymID = localStorage.getItem('gymPro_saved_gym_id') || 'default_gym';
+}
+
 const STORAGE_KEY   = `gymPro_members_${gymID}`;
 const EXPIRY_DAYS   = 30;
 const MS_PER_DAY    = 1000 * 60 * 60 * 24;
@@ -42,9 +52,10 @@ const membersBody  = document.getElementById('membersBody');
 const emptyState   = document.getElementById('emptyState');
 const searchInput  = document.getElementById('searchInput');
 const filterBtns   = document.querySelectorAll('.filter-btn');
-const activeCount  = document.getElementById('activeCount');
-const expiredCount = document.getElementById('expiredCount');
-const totalCount   = document.getElementById('totalCount');
+const activeCount   = document.getElementById('activeCount');
+const warningCount  = document.getElementById('warningCount');
+const expiredCount  = document.getElementById('expiredCount');
+const totalCount    = document.getElementById('totalCount');
 const modalOverlay = document.getElementById('modalOverlay');
 const confirmBtn   = document.getElementById('confirmDelete');
 const cancelBtn    = document.getElementById('cancelDelete');
@@ -57,6 +68,16 @@ const toast        = document.getElementById('toast');
 
 // ─── INIT ─────────────────────────────────────────────────
 (function init() {
+  // Register Service Worker for PWA
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then(registration => {
+        console.log('SW registered:', registration);
+      }).catch(error => {
+        console.log('SW registration failed:', error);
+      });
+    });
+  }
   startApp();
 })();
 
@@ -72,6 +93,7 @@ async function startApp() {
   setDefaultDate();
   loadFromStorage();
   renderAll();
+  checkBackupReminder();
 
   form.addEventListener('submit', handleAddMember);
   searchInput.addEventListener('input', handleSearch);
@@ -83,18 +105,58 @@ async function startApp() {
   restoreFile.addEventListener('change', restoreData);
   modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 
+  // ── Backup Section Buttons ──
+  document.getElementById('backupBtn2').addEventListener('click', backupData);
+  document.getElementById('exportExcel2').addEventListener('click', exportToExcel);
+  document.getElementById('restoreFile2').addEventListener('change', restoreData);
+
+  // ── View Navigation ──
+  function switchView(view) {
+    const gridLayout    = document.querySelector('.grid-layout');
+    const membersSection = document.getElementById('membersSection');
+    const backupSection = document.getElementById('backupSection');
+
+    // Reset all
+    gridLayout.style.display    = '';
+    membersSection.style.display = '';
+    backupSection.style.display = 'none';
+
+    if (view === 'backup') {
+      gridLayout.style.display    = 'none';
+      membersSection.style.display = 'none';
+      backupSection.style.display = 'flex';
+      updateBackupMeta();
+    } else if (view === 'dashboard') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (view === 'add') {
+      document.querySelector('.add-card').scrollIntoView({ behavior: 'smooth' });
+    } else if (view === 'members') {
+      document.querySelector('.table-card').scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  // Sidebar Nav
+  const sideNavItems = document.querySelectorAll('.nav-item');
+  sideNavItems.forEach(item => {
+    item.addEventListener('click', () => {
+      sideNavItems.forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      switchView(item.dataset.view);
+    });
+  });
+
   // Mobile Nav Logic
   const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
   bottomNavItems.forEach(item => {
     item.addEventListener('click', () => {
       bottomNavItems.forEach(i => i.classList.remove('active'));
       item.classList.add('active');
-      const view = item.dataset.view;
-      if (view === 'dashboard') window.scrollTo({ top: 0, behavior: 'smooth' });
-      if (view === 'add') document.querySelector('.add-card').scrollIntoView({ behavior: 'smooth' });
-      if (view === 'members') document.querySelector('.table-card').scrollIntoView({ behavior: 'smooth' });
+      switchView(item.dataset.view);
     });
   });
+
+  // Update backup meta on load
+  updateBackupMeta();
 }
 
 // ... (initLogin, hashStr, syncTime, getCurrentTime, setDefaultDate remain similar but I'll update logic)
@@ -174,7 +236,8 @@ function handleAddMember(e) {
   if (!validateForm()) return;
 
   const name             = nameInput.value.trim();
-  const phone            = phoneInput.value.trim();
+  const rawPhone         = phoneInput.value.trim().replace(/\D/g, '');
+  const phone            = '213' + rawPhone;          // تُخزَّن دائماً كـ 213XXXXXXXXX
   const duration         = parseInt(durationSelect.value);
   const paymentTimestamp = new Date(dateInput.value).getTime();
   const expiryTimestamp  = calculateExpiry(paymentTimestamp, duration);
@@ -195,7 +258,7 @@ function handleAddMember(e) {
   form.reset();
   setDefaultDate();
 
-  showToast(`✅ Membre "${name}" ajouté`, 'success');
+  showReceiptCard(member);
 }
 
 function validateForm() {
@@ -214,6 +277,14 @@ function validateForm() {
 
 // ─── RENDER ───────────────────────────────────────────────
 
+/** Central status resolver — single source of truth */
+function getMemberStatus(expiryTimestamp) {
+  const days = daysRemaining(expiryTimestamp);
+  if (days <= 0) return 'expired';
+  if (days <= 3) return 'warning';
+  return 'active';
+}
+
 function renderAll() {
   applyFilters();
   updateStats();
@@ -221,11 +292,9 @@ function renderAll() {
 }
 
 function updateStats() {
-  const active  = members.filter(m =>  isActive(m.expiryTimestamp)).length;
-  const expired = members.filter(m => !isActive(m.expiryTimestamp)).length;
-
-  activeCount.textContent  = active;
-  expiredCount.textContent = expired;
+  activeCount.textContent  = members.filter(m => getMemberStatus(m.expiryTimestamp) === 'active').length;
+  warningCount.textContent = members.filter(m => getMemberStatus(m.expiryTimestamp) === 'warning').length;
+  expiredCount.textContent = members.filter(m => getMemberStatus(m.expiryTimestamp) === 'expired').length;
   totalCount.textContent   = members.length;
 }
 
@@ -239,15 +308,8 @@ function renderTable() {
   emptyState.classList.remove('show');
 
   filteredList.forEach((member, index) => {
-    const remaining = daysRemaining(member.expiryTimestamp);
-    
-    // Status Logic
-    let statusClass = 'active';
-    if (remaining <= 0) {
-      statusClass = 'expired';
-    } else if (remaining <= 3) {
-      statusClass = 'warning';
-    }
+    const remaining   = daysRemaining(member.expiryTimestamp);
+    const statusClass = getMemberStatus(member.expiryTimestamp);
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -297,20 +359,92 @@ function sendWhatsApp(id) {
   }
 
   const remaining = daysRemaining(member.expiryTimestamp);
-  const gymName = localStorage.getItem(`gym_name_${gymID}`) || "القاعة الرياضية";
-  let message = "";
-  
+  const gymName   = localStorage.getItem(`gym_name_${gymID}`) || "القاعة الرياضية";
+  let message     = "";
+
   if (remaining <= 0) {
     message = `مرحباً ${member.name}! 💪\nنود تذكيرك أن اشتراكك في ${gymName} قد انتهى منذ ${Math.abs(remaining)} أيام. نتمنى أنك تستمتع بتدريباتك معنا، وبانتظار رؤيتك لتجديد نشاطك ومواصلة رحلتك نحو أفضل نسخة من نفسك!\nالقاعة ترحب بك دائماً.`;
   } else {
     message = `مرحباً ${member.name}! 💪\nنود تذكيرك أن اشتراكك في ${gymName} سينتهي خلال ${remaining} أيام. نتمنى أنك تستمتع بتدريباتك معنا، وبانتظار رؤيتك لتجديد نشاطك ومواصلة رحلتك نحو أفضل نسخة من نفسك!\nالقاعة ترحب بك دائماً.`;
   }
 
-  // Clean phone number (remove spaces, etc. and ensure it has a country code if needed, but for now we'll use it as is)
-  const cleanPhone = member.phone.replace(/\D/g, '');
-  const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+  // الرقم مُخزَّن مسبقاً بالصيغة الدولية (213XXXXXXXXX)
+  const waUrl = `https://api.whatsapp.com/send?phone=${member.phone}&text=${encodeURIComponent(message)}`;
   window.open(waUrl, '_blank');
 }
+
+// ─── DIGITAL RECEIPT ──────────────────────────────────────
+
+/** إرسال وصل التسجيل عبر واتساب */
+function sendReceipt(member) {
+  if (!member.phone) {
+    showToast("⚠️ لا يمكن إرسال الوصل — رقم الهاتف غير متوفر", "error");
+    return;
+  }
+
+  const gymName    = localStorage.getItem(`gym_name_${gymID}`) || "القاعة الرياضية";
+  const expiryDate = formatDate(member.expiryTimestamp);
+  const duration   = member.duration === 1 ? 'شهر واحد'
+                   : member.duration === 12 ? 'سنة كاملة'
+                   : `${member.duration} أشهر`;
+
+  const message =
+    `مرحباً ${member.name} 👋\n` +
+    `✅ تم تفعيل اشتراكك بنجاح في *${gymName}*\n\n` +
+    `📋 *تفاصيل الاشتراك:*\n` +
+    `• المدة: ${duration}\n` +
+    `• تاريخ الانتهاء: ${expiryDate}\n\n` +
+    `💪 نتمنى لك تدريباً موفقاً ورحلة ناجحة نحو أفضل نسخة من نفسك!\n` +
+    `شكراً لثقتك بنا 🙏`;
+
+  const waUrl = `https://api.whatsapp.com/send?phone=${member.phone}&text=${encodeURIComponent(message)}`;
+  window.open(waUrl, '_blank');
+}
+
+/** إظهار بطاقة الوصل بعد إضافة مشترك */
+let receiptTimer = null;
+let receiptCurrentMember = null;
+
+function showReceiptCard(member) {
+  receiptCurrentMember = member;
+
+  const card       = document.getElementById('receiptCard');
+  const nameEl     = document.getElementById('receiptMemberName');
+  const progressEl = document.getElementById('receiptProgress');
+
+  nameEl.textContent = member.name;
+
+  // مسح أي timer سابق
+  clearTimeout(receiptTimer);
+  progressEl.style.transition = 'none';
+  progressEl.style.width = '100%';
+
+  card.classList.add('show');
+
+  // شريط تقدم الإغلاق التلقائي (8 ثوانٍ)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      progressEl.style.transition = 'width 8s linear';
+      progressEl.style.width = '0%';
+    });
+  });
+
+  receiptTimer = setTimeout(() => closeReceiptCard(), 8000);
+}
+
+function closeReceiptCard() {
+  const card = document.getElementById('receiptCard');
+  card.classList.remove('show');
+  clearTimeout(receiptTimer);
+  receiptCurrentMember = null;
+}
+
+// Wire up receipt card buttons
+document.getElementById('receiptSendBtn').addEventListener('click', () => {
+  if (receiptCurrentMember) sendReceipt(receiptCurrentMember);
+  closeReceiptCard();
+});
+document.getElementById('receiptCloseBtn').addEventListener('click', closeReceiptCard);
 
 function handleRenew(id) {
   const member = members.find(m => m.id === id);
@@ -369,6 +503,10 @@ function backupData() {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+
+  // Save last backup time
+  localStorage.setItem(`gymPro_lastBackup_${gymID}`, new Date().toISOString());
+  updateBackupMeta();
 
   showToast(`💾 تم تحميل النسخة الاحتياطية (${members.length} مشترك)`, "success");
 }
@@ -434,10 +572,7 @@ function applyFilters() {
   const query = searchInput.value.trim().toLowerCase();
   filteredList = members.filter(m => {
     const matchSearch = m.name.toLowerCase().includes(query) || (m.phone && m.phone.includes(query));
-    const matchFilter =
-      currentFilter === 'all'     ? true :
-      currentFilter === 'active'  ? isActive(m.expiryTimestamp) :
-                                    !isActive(m.expiryTimestamp);
+    const matchFilter = (currentFilter === 'all') || (getMemberStatus(m.expiryTimestamp) === currentFilter);
     return matchSearch && matchFilter;
   });
 }
@@ -493,3 +628,66 @@ function setDefaultDate() {
   const today = new Date(getCurrentTime());
   dateInput.value = today.toISOString().split('T')[0];
 }
+
+// ─── BACKUP META ─────────────────────────────────────────
+function updateBackupMeta() {
+  const lastKey = `gymPro_lastBackup_${gymID}`;
+  const lastTs  = localStorage.getItem(lastKey);
+  const metaEl  = document.getElementById('backupMeta');
+  const barEl   = document.getElementById('lastBackupBar');
+  const textEl  = document.getElementById('lastBackupText');
+
+  const memberCount = members.length;
+  if (metaEl) {
+    metaEl.textContent = `${memberCount} مشترك محفوظ في الجهاز`;
+  }
+
+  if (lastTs && barEl && textEl) {
+    const d = new Date(lastTs);
+    const formatted = d.toLocaleDateString('ar-EG-u-nu-latn', {
+      year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+    textEl.textContent = `آخر نسخة احتياطية: ${formatted}`;
+    barEl.style.display = 'flex';
+  } else if (barEl) {
+    barEl.style.display = 'none';
+  }
+}
+
+// ─── BACKUP REMINDER ─────────────────────────────────────
+const REMINDER_KEY      = `gymPro_reminderDismissed_${gymID}`;
+const REMINDER_INTERVAL = 3 * 24 * 60 * 60 * 1000; // 3 أيام بالمللي ثانية
+
+function checkBackupReminder() {
+  // لا تُظهر التنبيه إذا لم تكن هناك بيانات بعد
+  if (members.length === 0) return;
+
+  const lastDismissed = parseInt(localStorage.getItem(REMINDER_KEY) || '0');
+  const elapsed       = Date.now() - lastDismissed;
+
+  if (elapsed >= REMINDER_INTERVAL) {
+    showBackupReminder();
+  }
+}
+
+function showBackupReminder() {
+  const banner = document.getElementById('backupReminderBanner');
+  if (!banner) return;
+  // تأخير بسيط ليكون ظهور البانر أكثر أناقة بعد تحميل الصفحة
+  setTimeout(() => banner.classList.add('show'), 1200);
+}
+
+function dismissBackupReminder() {
+  const banner = document.getElementById('backupReminderBanner');
+  if (!banner) return;
+  banner.classList.remove('show');
+  localStorage.setItem(REMINDER_KEY, Date.now().toString());
+}
+
+// Wire up banner buttons
+document.getElementById('reminderDismiss').addEventListener('click', dismissBackupReminder);
+document.getElementById('reminderDoBackup').addEventListener('click', () => {
+  backupData();
+  dismissBackupReminder();
+});

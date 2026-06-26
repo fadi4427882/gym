@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GymPro Dashboard — نظام إدارة الاشتراكات</title>
   <meta name="description" content="نظام احترافي لإدارة اشتراكات القاعة الرياضية" />
+  <meta name="theme-color" content="#07090f" />
+  <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet" />
@@ -14,6 +16,21 @@
 </head>
 
 <body>
+
+  <!-- ── BACKUP REMINDER BANNER ── -->
+  <div class="backup-reminder-banner" id="backupReminderBanner" role="alert" aria-live="polite">
+    <div class="backup-reminder-inner">
+      <span class="backup-reminder-icon">🛡️</span>
+      <div class="backup-reminder-text">
+        <strong>تذكير حماية البيانات</strong>
+        <span>بياناتك مخزنة في المتصفح فقط — حمّل نسخة احتياطية الآن لحماية معلومات المشتركين من الضياع.</span>
+      </div>
+      <div class="backup-reminder-actions">
+        <button class="backup-reminder-btn-do" id="reminderDoBackup">💾 نسخ احتياطي</button>
+        <button class="backup-reminder-btn-close" id="reminderDismiss" aria-label="إغلاق">✕</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ══════════════════════════════════
        MAIN DASHBOARD
@@ -43,6 +60,10 @@
         <a class="nav-item" data-view="members">
           <span class="nav-icon">👥</span>
           <span class="nav-label">المشتركون</span>
+        </a>
+        <a class="nav-item" data-view="backup">
+          <span class="nav-icon">💾</span>
+          <span class="nav-label">حفظ البيانات</span>
         </a>
       </nav>
 
@@ -118,14 +139,19 @@
 
                 <div class="form-group">
                   <label for="memberPhone" class="form-label">رقم الهاتف</label>
-                  <input
-                    type="tel"
-                    id="memberPhone"
-                    class="form-input"
-                    placeholder="05xxxxxxxx"
-                    dir="ltr"
-                    required
-                  />
+                  <div class="phone-input-group">
+                    <span class="phone-prefix">+213</span>
+                    <input
+                      type="tel"
+                      id="memberPhone"
+                      class="form-input"
+                      placeholder="555123456"
+                      pattern="[5-7][0-9]{8}"
+                      maxlength="9"
+                      dir="ltr"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div class="form-group">
@@ -242,6 +268,72 @@
 
         </section>
 
+        <!-- ══════════════════════════════════
+             BACKUP / SAVE SECTION
+        ══════════════════════════════════ -->
+        <section id="backupSection" class="backup-section" style="display:none;">
+
+          <div class="backup-hero">
+            <div class="backup-hero-icon">🛡️</div>
+            <h2 class="backup-hero-title">حفظ واستعادة البيانات</h2>
+            <p class="backup-hero-sub">احرص على حفظ بياناتك بانتظام لتفادي أي فقدان غير متوقع</p>
+          </div>
+
+          <div class="backup-grid">
+
+            <!-- Card 1: JSON Backup -->
+            <div class="backup-card">
+              <div class="backup-card-icon backup-icon-blue">💾</div>
+              <div class="backup-card-body">
+                <h3 class="backup-card-title">نسخ احتياطي</h3>
+                <p class="backup-card-desc">تحميل جميع بيانات المشتركين كملف JSON محمي للاحتفاظ به كنسخة أمان.</p>
+                <div id="backupMeta" class="backup-meta"></div>
+              </div>
+              <button id="backupBtn2" class="backup-action-btn backup-btn-blue">
+                <span>⬇️</span>
+                <span>تحميل النسخة الاحتياطية</span>
+              </button>
+            </div>
+
+            <!-- Card 2: Excel Export -->
+            <div class="backup-card">
+              <div class="backup-card-icon backup-icon-green">📊</div>
+              <div class="backup-card-body">
+                <h3 class="backup-card-title">تصدير Excel</h3>
+                <p class="backup-card-desc">تصدير قائمة المشتركين كجدول Excel قابل للطباعة والمشاركة.</p>
+                <div class="backup-meta">يتضمن: الاسم، الهاتف، تاريخ الانتهاء، الحالة</div>
+              </div>
+              <button id="exportExcel2" class="backup-action-btn backup-btn-green">
+                <span>📥</span>
+                <span>تصدير ملف Excel</span>
+              </button>
+            </div>
+
+            <!-- Card 3: Restore -->
+            <div class="backup-card">
+              <div class="backup-card-icon backup-icon-orange">📂</div>
+              <div class="backup-card-body">
+                <h3 class="backup-card-title">استعادة البيانات</h3>
+                <p class="backup-card-desc">استيراد ملف نسخ احتياطي JSON لاستعادة بيانات المشتركين المحفوظة.</p>
+                <div class="backup-meta">يتم دمج البيانات تلقائياً بدون تكرار</div>
+              </div>
+              <label class="backup-action-btn backup-btn-orange" style="cursor:pointer;">
+                <span>📤</span>
+                <span>استعادة من ملف</span>
+                <input type="file" id="restoreFile2" accept=".json" style="display:none;" />
+              </label>
+            </div>
+
+          </div>
+
+          <!-- Last Backup Info -->
+          <div class="last-backup-bar" id="lastBackupBar" style="display:none;">
+            <span class="last-backup-icon">✅</span>
+            <span id="lastBackupText">آخر نسخة احتياطية: —</span>
+          </div>
+
+        </section>
+
       </main>
 
       <!-- FOOTER -->
@@ -268,6 +360,10 @@
       <span class="nav-icon">👥</span>
       <span>المشتركون</span>
     </button>
+    <button class="bottom-nav-item" data-view="backup">
+      <span class="nav-icon">💾</span>
+      <span>الحفظ</span>
+    </button>
   </nav>
 
   <!-- ── DELETE MODAL ── -->
@@ -285,6 +381,27 @@
 
   <!-- ── TOAST ── -->
   <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+  <!-- ── RECEIPT ACTION CARD ── -->
+  <div class="receipt-card" id="receiptCard" role="status" aria-live="polite">
+    <div class="receipt-card-inner">
+      <div class="receipt-card-info">
+        <span class="receipt-card-icon">✅</span>
+        <div class="receipt-card-text">
+          <strong id="receiptMemberName">أحمد محمد</strong>
+          <span>تم التسجيل بنجاح — هل تريد إرسال وصل الاستلام؟</span>
+        </div>
+      </div>
+      <div class="receipt-card-actions">
+        <button class="receipt-btn-send" id="receiptSendBtn">
+          <span>💬</span>
+          <span>إرسال وصل واتساب</span>
+        </button>
+        <button class="receipt-btn-close" id="receiptCloseBtn" aria-label="إغلاق">✕</button>
+      </div>
+      <div class="receipt-progress" id="receiptProgress"></div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>
