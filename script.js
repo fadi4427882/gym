@@ -5,16 +5,8 @@
 
 'use strict';
 
-// ─── FRONTEND SECURITY (Anti-Inspect) ─────────────────────
-// Note: This prevents casual inspection but does not replace backend security.
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-  if (e.key === 'F12' || 
-     (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || 
-     (e.ctrlKey && e.key === 'U')) {
-    e.preventDefault();
-  }
-});
+// ─── FRONTEND SECURITY ──────────────────────────────────────
+// (تمت إزالة كود منع الفحص المزعج لأنه يضر بتجربة المستخدم)
 
 // ─── CONSTANTS ───────────────────────────────────────────
 // ─── جلب وتثبيت اسم الصالة الذكي (LocalStorage Fix) ───
@@ -91,7 +83,7 @@ async function startApp() {
   initGymName();
   await syncTime();
   setDefaultDate();
-  loadFromStorage();
+  await loadFromStorage();
   renderAll();
   checkBackupReminder();
 
@@ -210,23 +202,103 @@ function uid() {
   return getCurrentTime().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
-// ─── STORAGE ──────────────────────────────────────────────
+// ─── STORAGE (Firebase Cloud Sync) ─────────────────────────
 
-function loadFromStorage() {
+// ⚠️ ضع إعدادات مشروعك من Firebase هنا ⚠️
+const firebaseConfig = {
+  // apiKey: "...",
+  // authDomain: "...",
+  // projectId: "...",
+  // storageBucket: "...",
+  // messagingSenderId: "...",
+  // appId: "..."
+};
+
+let db;
+let cloudEnabled = Object.keys(firebaseConfig).length > 0;
+
+if (cloudEnabled) {
   try {
-    members = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    // Migration: ensure old members have duration/expiry
-    members.forEach(m => {
-      if (!m.duration) m.duration = 1;
-      if (!m.expiryTimestamp) m.expiryTimestamp = calculateExpiry(m.paymentTimestamp, m.duration);
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    // تفعيل التخزين المؤقت في وضع عدم الاتصال (Offline Persistence)
+    db.enablePersistence().catch(err => {
+      console.warn("Firebase offline persistence failed", err);
     });
-  } catch {
-    members = [];
+  } catch (err) {
+    console.error("Firebase initialization error", err);
+    cloudEnabled = false;
   }
 }
 
-function saveToStorage() {
+function updateCloudStatus(status) {
+  const icon = document.getElementById('cloudStatusIcon');
+  const text = document.getElementById('cloudStatusText');
+  const badge = document.getElementById('cloudStatusBadge');
+  if (!icon) return;
+  
+  badge.className = 'stat-badge cloud-badge ' + status;
+  if (status === 'synced') {
+    icon.textContent = '☁️ ✔️';
+    text.textContent = 'متصل';
+  } else if (status === 'offline') {
+    icon.textContent = '☁️ ❌';
+    text.textContent = 'غير متصل';
+  } else {
+    icon.textContent = '☁️ ⏳';
+    text.textContent = 'جاري الاتصال';
+  }
+}
+
+async function loadFromStorage() {
+  if (cloudEnabled) {
+    updateCloudStatus('loading');
+    try {
+      const docRef = db.collection('gyms').doc(gymID);
+      const docSnap = await docRef.get();
+      if (docSnap.exists) {
+        members = docSnap.data().members || [];
+      } else {
+        // Migration: If Cloud is empty but local has data, migrate it up!
+        members = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        if (members.length > 0) {
+          await docRef.set({ members });
+        }
+      }
+      updateCloudStatus('synced');
+    } catch(e) {
+      console.error(e);
+      updateCloudStatus('offline');
+      members = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    }
+  } else {
+    // Fallback: If no Firebase Config is provided yet
+    updateCloudStatus('offline');
+    const textEl = document.getElementById('cloudStatusText');
+    if (textEl) textEl.textContent = 'تحتاج إعداد';
+    members = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  }
+  
+  // Migration: ensure old members have duration/expiry
+  members.forEach(m => {
+    if (!m.duration) m.duration = 1;
+    if (!m.expiryTimestamp) m.expiryTimestamp = calculateExpiry(m.paymentTimestamp, m.duration);
+  });
+}
+
+async function saveToStorage() {
+  // الحفظ محلياً دائماً لتسريع القراءة وللطوارئ
   localStorage.setItem(STORAGE_KEY, JSON.stringify(members));
+  
+  if (cloudEnabled) {
+    updateCloudStatus('loading');
+    try {
+      await db.collection('gyms').doc(gymID).set({ members });
+      updateCloudStatus('synced');
+    } catch (e) {
+      updateCloudStatus('offline');
+    }
+  }
 }
 
 // ─── ACTIONS ──────────────────────────────────────────────
@@ -579,7 +651,14 @@ function applyFilters() {
   });
 }
 
-function handleSearch() { applyFilters(); renderTable(); }
+let searchTimeout;
+function handleSearch() { 
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    applyFilters(); 
+    renderTable(); 
+  }, 300); // 300ms Debounce
+}
 function handleFilter(e) {
   currentFilter = e.currentTarget.dataset.filter;
   filterBtns.forEach(b => b.classList.toggle('active', b === e.currentTarget));
@@ -615,17 +694,12 @@ function escapeHtml(str) {
 
 
 
+// تم الاستغناء عن worldtimeapi لضمان سرعة التشغيل
 async function syncTime() {
-  try {
-    const start = Date.now();
-    const res = await fetch('https://worldtimeapi.org/api/timezone/Etc/UTC');
-    const data = await res.json();
-    const serverTime = new Date(data.utc_datetime).getTime();
-    timeOffset = serverTime - Date.now() + ((Date.now() - start) / 2);
-  } catch (err) { console.warn('Sync failed'); }
+  timeOffset = 0;
 }
 
-function getCurrentTime() { return Date.now() + timeOffset; }
+function getCurrentTime() { return Date.now(); }
 function setDefaultDate() {
   const today = new Date(getCurrentTime());
   dateInput.value = today.toISOString().split('T')[0];

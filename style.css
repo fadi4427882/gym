@@ -490,6 +490,10 @@ body {
 .expired-badge .stat-num { color: var(--danger); }
 .total-badge   .stat-num { color: var(--primary-light); }
 
+.cloud-badge.synced .stat-num { color: var(--success); }
+.cloud-badge.offline .stat-num { color: var(--warning); }
+.cloud-badge.error .stat-num { color: var(--danger); }
+
 /* ── MAIN CONTAINER ── */
 .main-container {
   padding: 24px 32px 60px;

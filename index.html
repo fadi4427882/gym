@@ -101,7 +101,11 @@
             </div>
             <div class="stat-badge total-badge">
               <span class="stat-num" id="totalCount">0</span>
-              <span class="stat-label">📋 الكل</span>
+              <span class="stat-label">الكل</span>
+            </div>
+            <div class="stat-badge cloud-badge" id="cloudStatusBadge" title="يتم الاتصال بالسحابة..." style="cursor: pointer;">
+              <span class="stat-num" id="cloudStatusIcon" style="font-size: 1.1rem; margin-bottom: 2px;">☁️ ⏳</span>
+              <span class="stat-label" id="cloudStatusText">جاري الاتصال</span>
             </div>
           </div>
 
@@ -402,6 +406,10 @@
       <div class="receipt-progress" id="receiptProgress"></div>
     </div>
   </div>
+
+  <!-- ── FIREBASE SDK (CDN) ── -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
   <script src="script.js"></script>
 </body>
